@@ -3,9 +3,14 @@ A scripting language that allows you to create dynamically updating content.
 JavaScript is interpreted, meaning it is run from top to bottom, as though being read.
 JavaScript is object-oriented, "everything is an object" (except primitives) and has methods.
 
+Table of Contents:
+
+[TOC]
+
 ------
 
 ## Internal vs External JavaScript
+
   - Internal - JavaScript is inserted into the HTML file, ideally in the <head></head>, between <script></script> tags
   - External - JavaScript is written in external files and imported into the HTML, again inside <script></script> tags in the head
   - Inline JavaScript - a form of internal JavaScript that involves writing JavaScript inside the HTML body without script tags. While it works, it is considered bad practice.
@@ -13,6 +18,7 @@ JavaScript is object-oriented, "everything is an object" (except primitives) and
 ------
 
 ## Script Loading Strategies
+
 Since JavaScript is interpreted and the head of the HTML is loaded before the body is parsed, the code may not function as intended. You can use:
 
 ```javascript
@@ -43,6 +49,7 @@ The above scripts will run in order after all page content has loaded. Generally
 ------
 
 ## Primitives
+
 A primitive is data that is not an object and has no methods. JavaScript has 7 primitive data types:
   - string (typeof instance === 'string')
   - number (typeof instance === 'number')
@@ -61,6 +68,28 @@ Except for null and undefined, all primitives have object equivalents that wrap 
   - Symbol for the symbol primitive
 
 The wrapper's valueOf() method returns the primitive value.
+
+------
+
+## Decimals in JavaScript
+
+Because all numbers in JavaScript are IEEE 75 floating point numbers, some decimal numbers cannot be represented with perfect accuracy. To avoid issues with unexpected trailing decimals, you can either convert the number to a string and then back to a number:
+
+```javascript
+function calcTax (base) {
+    return parseFloat((base * 0.2).toFixed(2));
+}
+```
+
+or you can work in integers to the precision that you want:
+
+```javascript
+function calcTax (base) {
+    const padding = 100; // For 2 decimal precision
+    base = base * padding;
+    return Math.round(base * 0.2) / padding;
+}
+```
 
 ------
 
@@ -101,6 +130,7 @@ console.log(obj2); // {a: 3, b: 2, c: 3, d: 4}
 ------
 
 ## Useful Built-in Objects
+
   - Set
     - Allows for storage of unique values of any type, whether primitive values or object references
     - A value in a set may occur only once
@@ -116,7 +146,111 @@ console.log(obj2); // {a: 3, b: 2, c: 3, d: 4}
 
 ------
 
+## Class Patterns
+
+Functional with shared methods
+
+```javascript
+// Class
+
+function Phone (number) {
+  var result = {};
+  result.number = number;
+  Object.assign(result, phoneMethods);
+  return result;
+};
+
+var phoneMethods = {};
+phoneMethods.dial = function (number) {
+  console.log('Dialing', number);
+};
+
+var motorola = Phone(695323871);
+
+// Sub-class
+
+function SmartPhone (number, email) {
+  var result = Phone(number);
+  result.email = email;
+  Object.assign(result, smartPhoneMethods);
+  return result;
+};
+
+var smartPhoneMethods = {};
+smartPhoneMethods.sendEmail = function (email) {
+  console.log('Emailing', email);
+};
+
+var iPhone = SmartPhone(642503917, 'jack@apple.com');
+```
+
+Pseudo-classical:
+
+```javascript
+// Class
+
+function Phone (number) {
+  // var this = Object.create(Phone.prototype);
+  this.number = number;
+  // return this;
+};
+
+Phone.prototype.dial = function (number) {
+  console.log('Dialing', number);
+};
+
+// Initialized variables must use 'new' keyword to turn the function into a constructor
+var motorola = new Phone(695323871);
+
+// Sub-class
+
+function SmartPhone (number, email) {
+  // var this = Object.create(SmartPhone.prototype);
+  Phone.call(this, number);
+  this.email = email;
+  // return this;
+};
+
+SmartPhone.prototype = Object.create(Phone.prototype);
+SmartPhone.prototype.constructor = SmartPhone;
+SmartPhone.prototype.sendEmail = function (email) {
+  console.log('Emailing', email);
+};
+
+var iPhone = new SmartPhone(642503917, 'jack@apple.com');
+```
+
+ES6 Classes:
+
+```javascript
+// Class
+
+class Phone {
+  constructor (number) {
+    this.number = number;
+  }
+  dial (number) {
+    console.log('Dialing', number);
+  }
+}
+
+// Sub-class
+
+class SmartPhone extends Phone {
+  constructor (number, email) {
+    super(number);
+    this.email = email;
+  }
+  sendEmail (email) {
+    console.log('Emailing', email);
+  }
+}
+```
+
+------
+
 ## Variables
+
 Can be declared using 'var', 'let', and 'const':
   - 'var' was the original keyword, and has some properties that cause issues:
     - Variables can be declared AFTER they are initialized and it will still work because var is hoisted:
@@ -140,9 +274,39 @@ Can be declared using 'var', 'let', and 'const':
       var myName = 'Bob';
       ```
 
+    - 'var' is function scoped, so, outside a function it is global, which can cause problems. In the below example with a for loop using 'var', though the outputs will occur one second apart from each other, as intended, the setTimeouts are implemented by the for loop far before they start executing. Therefore, i will be 3 because it was declared using var and is globally scoped since a for loop is not a function.
+
+      ```javascript
+      for (var i = 0; i < 3; i++) {
+          setTimeout(() => {
+              console.log(i);
+          }, i * 1000);
+      }
+      // Output:
+      // 3
+      // (one second delay)
+      // 3
+      // (one second delay, two total seconds)
+      // 3
+      
+      // Since let is block scoped, each increment of i will be logged as expected
+      for (let i = 0; i < 3; i++) {
+          setTimeout(() => {
+              console.log(i);
+          }, i * 1000);
+      }
+      // Output:
+      // 0
+      // (one second delay)
+      // 1
+      // (one second delay, two total seconds)
+      // 2
+      ```
+
   - 'let' addresses these issues and is preferred in modern JavaScript
     - Variables have to be declared before or at the same time that they are initialized
     - Variables can only be declared once, but can be reassigned
+    - 'let' is block scoped (any code inside curly braces)
 
   - 'const' variables cannot be reassigned
 
@@ -227,13 +391,24 @@ function foo(arg1, arg2, ...correct) {}
 ------
 
 ## Functions
+
 Performs a task or calculates a value.
+
+Things passed to a function are called 'parameters'. Primitive parameters are passed by value, object parameters are passed by reference.
+
+
+
+### Pure Functions
+
 'Pure functions' have the following properties:
+
   - Given the same input, will always return the same output
   - Produces no side effects
     - Does not mutate the external state, for example
 
-Things passed to a function are called 'parameters'. Primitive parameters are passed by value, object parameters are passed by reference.
+
+
+### Function Declarations
 
 A function declaration (also definition or statement) has the following form:
 
@@ -245,6 +420,10 @@ function square(number) {
 
 Function declarations are hoisted and may be called before they are defined (though this is now considered bad practice).
 
+
+
+### Function Expressions
+
 A function expression has the following form:
 
 ```javascript
@@ -252,6 +431,10 @@ const square = function (number) {
   return number * number;
 }
 ```
+
+
+
+### Arrow Functions
 
 or, using ES6 arrow notation:
 
@@ -267,7 +450,11 @@ With ES6, the above can be further simplified:
 const square = number => number * number;
 ```
 
-Since there is only one parameter being passed, the parentheses can be omitted, and since there is only one return line the expression can be moved to the declaration line and the return becomes implicit. Note that if you put curly braces around the above expression JavaScript will interpret this as returning an object. Arrow functions do not have their own `this` or `arguments` and are always anonymous (would need to be assigned to a variable to be reused).
+Since there is only one parameter being passed, the parentheses can be omitted, and since there is only one return line the expression can be moved to the declaration line and the return becomes implicit. Note that if you put curly braces around the above expression JavaScript will interpret this as returning an object. Arrow functions do not have their own `this` or `arguments` and are always anonymous (would need to be assigned to a variable to be reused). Arrow functions take their context from the one immediately above at execution time.
+
+
+
+### Function Scope and this
 
 Variables defined inside a function cannot be accessed outside the function. Functions can, however, access variables defined inside the scope in which it was defined. In other words, a function defined in the global scope can access all variables defined in the global scope. A function defined inside another function can also access all variables defined in its parent function, and any other variables to which the parent function has access.
 
@@ -298,6 +485,133 @@ function getScore() {
 
 getScore(); // Returns "Chamakh scored 5"
 ```
+
+As an object method, the context generally refers to the object:
+
+```javascript
+const america = {
+  countryName: 'The United States of America',
+  yearFounded: 1776,
+
+  describe() {
+    console.log(`${this.countryName} was founded in ${this.yearFounded}.`)
+  },
+};
+
+america.describe(); // 'The United States of America was founded in 1776.'
+
+```
+
+In the above case, the context at invocation is the object `america` (typically remembered as 'the thing to the left of the dot at execution'). Since the function takes its context at execution (invocation) time, be wary of the following:
+
+```javascript
+const func = america.describe;
+
+func(); // 'undefined was founded in undefined.'
+```
+
+The context at invocation can be leveraged with methods in additional ways:
+
+```javascript
+function methodize (func) {
+    return function (b) {
+        return func(this, b); // pass the attached context as a parameter
+    }
+}
+
+function add (a, b) {
+    return a + b;
+}
+Number.prototype.add = methodize(add); // Now the add method just awaits the parameter 'b'
+(3).add(5); // Returns 8, 3 is passed in the place of the parameter 'this' (to the left of the dot)
+```
+
+Also, be aware that the callback of a setInterval function is the global context:
+
+```javascript
+const book = {
+  currentPage: 1,
+  readPage: function() {
+    setInterval(function() {
+      this.currentPage += 1;
+      console.log(this.currentPage);
+    }, 1000);
+  }
+}
+book.readPage(); // NaN... NaN... Nan...
+```
+
+This can be fixed by using an arrow function that takes its context from the context immediately above it:
+
+```javascript
+const book = {
+  currentPage: 1,
+  readPage: function() {
+    setInterval(() => {
+      this.currentPage += 1;
+      console.log(this.currentPage);
+    }, 1000);
+  }
+}
+book.readPage(); // 1... 2... 3...
+```
+
+
+
+### Apply, Call, and Bind
+
+In the above examples, `this` was determined by context, however you can explicitly set the context using the apply, call, or bind method. Both apply and call invoke a function with a passed `this` context and arguments. If no context is provided, the global context is assumed. The main difference between apply and call is that apply takes the arguments as an array while call takes the arguments one by one.
+
+```javascript
+const book = {
+  title: 'Brave New World',
+  author: 'Aldous Huxley',
+};
+
+function summary() {
+  console.log(`${this.title} was written by ${this.author}.`)
+}
+
+summary(); // 'undefined was written by undefined.'
+
+summary.call(book); // 'Brave New World was written by Aldous Huxley.'
+
+function longerSummary(genre, year) {
+  console.log(
+    `${this.title} was written by ${this.author}. It is a ${genre} novel written in ${year}.`,
+  )
+}
+
+longerSummary.call(book, 'dystopian', 1932);
+// 'Brave New World was written by Aldous Huxley. It is a dystopian novel written in 1932.'
+longerSummary.apply(book, ['dystopian', 1932]);
+// 'Brave New World was written by Aldous Huxley. It is a dystopian novel written in 1932.'
+```
+
+The bind method creates a new function that, when called, has its `this` keyword set to the provided value.
+
+```javascript
+const braveNewWorldSummary = summary.bind(book);
+
+braveNewWorldSummary(); // 'Brave New World was written by Aldous Huxley.'
+```
+
+Attempting to re-bind `braveNewWorldSummary` will fail:
+
+```javascript
+const book2 = {
+  title: '1984',
+  author: 'George Orwell',
+};
+
+braveNewWorldSummary.bind(book2);
+
+braveNewWorldSummary(); // 'Brave New World was written by Aldous Huxley.'
+```
+
+
+
+### Recursion
 
 A function can call itself, which is called 'recursion':
 
@@ -335,6 +649,10 @@ foo(3);
 
 ```
 
+
+
+### Nested Functions and Closures
+
 Nested functions (a function within a function) form a closure. A closure is an expression (most commonly, a function) that can have free variables together with an environment that binds those variables (that "closes" the expression). This means that the nested function contains the scope of the outer function. In summary:
 
 - The inner function can be accessed only from statements in the outer function
@@ -357,6 +675,10 @@ result1 = outside(3)(5); // returns 8
 ```
 
 x is preserved when inside is returned. Since each call provides potentially different arguments, a new closure is created for each call to `outside`. The memory can be freed only when the returned `inside` is no longer accessible.
+
+
+
+### Function arguments object
 
 You can access the parameters passed to a function by using the array-like `arguments` object. The `arguments` object has a length property and individual arguments can be accessed by `arguments[i]`. As an example:
 
@@ -391,6 +713,10 @@ Differences between the rest parameters and the arguments object:
 - The arguments object is not a real array, while rest parameters are Array instances
 - The arguments object has additional functionality specific to itself
 - The arguments object contains all parameters while the rest parameters array does not contain any arguments defined before it
+
+
+
+### Default Parameter Values
 
 Parameters can also have default values, as shown for the parameter b below:
 
